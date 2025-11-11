@@ -1,0 +1,77 @@
+{
+  "name": "gbcamera",
+  "private": true,
+  "version": "1.0.0",
+  "description": "GBCamera desktop app for image generation and printing",
+  "author": "Your Name <you@example.com>",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev:web": "vite",
+    "electron:start": "cross-env ELECTRON_DEV=true electron electron/start.js",
+    "dev:app": "concurrently \"npm run dev:web\" \"npm run electron:start\"",
+    "build:web": "vite build",
+    "build:main": "tsc electron/main.ts --outDir electron --esModuleInterop",
+    "preview:app": "npm run build:web && npm run build:main && cross-env ELECTRON_DEV=false electron electron/start.js",
+    "build:app": "npm run build:web && npm run build:main && electron-builder"
+  },
+  "dependencies": {
+    "@types/axios": "^0.9.36",
+    "axios": "^1.13.1",
+    "concurrently": "^9.2.1",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^7.9.4",
+    "ts-node": "^10.9.2",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@types/node": "^24.9.2",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.0.4",
+    "cross-env": "^10.1.0",
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.12",
+    "eslint": "^9.36.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.22",
+    "globals": "^16.4.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.45.0",
+    "vite": "^5.4.8"
+  },
+  "build": {
+    "appId": "com.gbcamera.desktop",
+    "productName": "GBCamera",
+    "directories": {
+      "buildResources": "build"
+    },
+    "files": [
+      "electron/**/*",
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "electron/main.js"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.photography",
+      "icon": "build/icon.icns"
+    },
+    "dmg": {
+      "icon": "build/icon.icns"
+    }
+  }
+}
