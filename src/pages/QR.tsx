@@ -8,7 +8,7 @@ export default function QR() {
   const { resultImage, index } = useAppStore()
 
   // QR 코드가 나타낼 URL
-  const qrUrl = `https://gb-camera.vercel.app/${index}`
+  const qrUrl = `https://gb-camera-front-end.vercel.app/${index}`
 
   return (
     <div style={{ textAlign: 'center', marginTop: '40px' }}>

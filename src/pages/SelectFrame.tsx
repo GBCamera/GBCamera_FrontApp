@@ -1,6 +1,8 @@
+// src/pages/SelectFrame.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
+import { getSavedPrinter } from '../lib/printer' // 설정에서 저장한 프린터 이름 사용
 
 type Slot = { x: number; y: number; w: number; h: number }
 
@@ -29,7 +31,7 @@ function loadImageSafe(src: string): Promise<HTMLImageElement | null> {
         if (!sameOrigin) img.crossOrigin = 'anonymous'
       }
     } catch {
-      // ignore invalid URL format (eslint no-empty fix)
+      // ignore invalid URL format
     }
 
     img.onload = () => resolve(img)
@@ -60,8 +62,6 @@ export default function SelectFrame() {
   /** 배치 설정 */
   const PREVIEW_HEIGHT_RATIO = 0.8
   const FRAME_PANEL_RATIO = 0.4
-  // const FRAME_CROP_WIDTH = 120
-  // const FRAME_CROP_HEIGHT = 150
   const FRAME_CROP_POSITION = 'center'
 
   const BASE_X = 0.065
@@ -207,14 +207,27 @@ export default function SelectFrame() {
     setFrame(path)
   }
 
+  /** ✅ 저장 후 Electron으로 바로 출력 */
   const handleSaveAndGoResult = async () => {
     const canvas = canvasRef.current
     if (!canvas) return
+
+    const printerName = getSavedPrinter() // Setting.tsx에서 저장한 프린터 이름
+    console.log('[SelectFrame] saved printer =', printerName)
+    if (!printerName) {
+      alert('선택된 프린터가 없습니다. 설정에서 프린터를 선택해주세요.')
+      return
+    }
+
     setSaving(true)
     canvas.toBlob(async (blob) => {
-      if (!blob) return
+      if (!blob) { setSaving(false); return }
       const dataURL = await blobToDataURL(blob)
+      const payloadBase64 = toBase64Payload(dataURL)
+
       try {
+        // 1) 결과 저장 (기존 로직 유지)
+        console.log('[SelectFrame] PUT /index/result', { index })
         const res = await fetch(`${API_BASE}/index/result`, {
           method: 'PUT',
           mode: 'cors',
@@ -223,14 +236,28 @@ export default function SelectFrame() {
             Accept: 'application/json',
             'x-index': String(index),
           },
-          body: JSON.stringify({ base64: toBase64Payload(dataURL) }),
+          body: JSON.stringify({ base64: payloadBase64 }),
         })
-        if (!res.ok) throw new Error(`Server error: ${res.status}`)
+        console.log('[SelectFrame] save status =', res.status)
+        if (!res.ok) throw new Error(`Server error(save): ${res.status}`)
+
+        // 2) Electron 메인 프로세스에 직접 프린트 (대화상자 없이)
+        if (!window.electronAPI?.printImage) {
+          throw new Error('electronAPI.printImage not found')
+        }
+        console.log('[SelectFrame] print via Electron =>', { deviceName: printerName })
+        await window.electronAPI.printImage({
+          dataURL: dataURL,        // data:image/jpeg;base64,....
+          deviceName: printerName, // 메인에서 deviceName으로 받도록 이미 구현됨
+          copies: 1,
+        })
+
+        // 3) 상태 저장 후 라우팅
         setResultImage(dataURL)
         navigate('/qr')
       } catch (e) {
-        console.error(e)
-        alert('결과 저장 실패. 서버 상태를 확인해주세요.')
+        console.error('[SelectFrame] print error:', e)
+        alert('결과 저장 또는 인쇄에 실패했습니다. 서버/프린터 상태를 확인해주세요.')
       } finally {
         setSaving(false)
       }
