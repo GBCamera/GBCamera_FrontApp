@@ -280,7 +280,7 @@ export default function Setting() {
                     </label>
                     {printers.length === 0 ? (
                         <div style={{ fontSize: 12, opacity: 0.8 }}>
-                            Electron 환경이 아니거나 사용 가능한 프린터가 없습니다.
+                            사용 가능한 프린터가 없습니다.
                         </div>
                     ) : (
                         <select

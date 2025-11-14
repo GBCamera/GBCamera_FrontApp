@@ -10,11 +10,14 @@ const FRAME_ASPECT = FRAME_W / FRAME_H
 
 const frameImages = import.meta.glob('../image/*.png', { eager: true, as: 'url' })
 
+// 🔢 오른쪽에서 보여줄 썸네일 개수
+const VISIBLE_COUNT = 6
+
 export default function SelectImage() {
   const navigate = useNavigate()
   const { images, setSelectImg } = useAppStore()
 
-  // ✅ 선택 상태는 로컬에서만 관리
+  // 선택된 이미지 인덱스 (로컬 상태)
   const [selectedIdx, setSelectedIdx] = useState<number[]>([])
 
   const leftPaneRef = useRef<HTMLDivElement | null>(null)
@@ -25,6 +28,7 @@ export default function SelectImage() {
 
   const framePath = frameImages['../image/1.png'] as string
 
+  // 📌 프레임 속 슬롯 위치 설정
   const BASE_X = 0.065
   const BASE_Y = 0.02
   const SLOT_W = 0.87
@@ -46,6 +50,7 @@ export default function SelectImage() {
     return arr
   }, [selectedIdx.length])
 
+  // 이미지 로더
   const loadImage = (src: string) =>
     new Promise<HTMLImageElement>((resolve, reject) => {
       const img = new Image()
@@ -54,6 +59,7 @@ export default function SelectImage() {
       img.src = src
     })
 
+  // 캔버스 사이즈 조정
   const sizeCanvasToContainer = () => {
     const canvas = canvasRef.current
     const host = leftPaneRef.current
@@ -73,6 +79,7 @@ export default function SelectImage() {
     canvas.height = Math.floor(cssH * dpr)
     canvas.style.width = `${cssW}px`
     canvas.style.height = `${cssH}px`
+
     const ctx = canvas.getContext('2d')
     if (ctx) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
@@ -81,6 +88,7 @@ export default function SelectImage() {
     return { cssW, cssH }
   }
 
+  // 캔버스 다시 그리기
   const redraw = async () => {
     const canvas = canvasRef.current
     const frameImg = frameImgRef.current
@@ -90,6 +98,7 @@ export default function SelectImage() {
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
+
     ctx.clearRect(0, 0, cssW, cssH)
     ctx.fillStyle = '#000'
     ctx.fillRect(0, 0, cssW, cssH)
@@ -117,12 +126,14 @@ export default function SelectImage() {
       const drawH = Math.round(imgEl.height * scaleToFit)
       const drawX = bandX + Math.floor((bandW - drawW) / 2)
       const drawY = bandY + Math.floor((bandH - drawH) / 2)
+
       ctx.drawImage(imgEl, drawX, drawY, drawW, drawH)
     }
 
     ctx.drawImage(frameImg, 0, 0, cssW, cssH)
   }
 
+  // 프레임 이미지 로드
   useEffect(() => {
     const img = new Image()
     img.onload = () => {
@@ -133,32 +144,32 @@ export default function SelectImage() {
     img.src = framePath
   }, [framePath])
 
+  // 선택 변경 시 다시 그리기
   useEffect(() => {
     if (isReady) redraw()
   }, [selectedIdx, isReady, linearLayout, images])
 
+  // 창 크기 변경 시 업데이트
   useEffect(() => {
     const onResize = () => redraw()
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [selectedIdx, linearLayout, isReady])
 
-  // ✅ 클릭 시 선택 / 해제
+  // 썸네일 선택
   const handlePick = (idx: number) => {
     if (!isReady || !images[idx]) return
     setSelectedIdx((prev) => {
-      if (prev.includes(idx)) {
-        return prev.filter((i) => i !== idx) // 해제
-      }
-      if (prev.length >= MAX_SLOTS) return prev // 3개 제한
-      return [...prev, idx] // 추가
+      if (prev.includes(idx)) return prev.filter((i) => i !== idx)
+      if (prev.length >= MAX_SLOTS) return prev
+      return [...prev, idx]
     })
   }
 
-  // ✅ 프레임 선택 버튼 클릭 시 전역 반영
+  // 다음 페이지 이동
   const handleGoSelectFrame = () => {
     const selectedImages = selectedIdx.map((i) => images[i]).filter(Boolean)
-    setSelectImg(selectedImages) // 👉 이때만 useAppStore에 저장
+    setSelectImg(selectedImages)
     navigate('/selectframe')
   }
 
@@ -175,7 +186,7 @@ export default function SelectImage() {
         boxSizing: 'border-box',
       }}
     >
-      {/* 왼쪽: 미리보기 */}
+      {/* 왼쪽 미리보기 */}
       <div
         ref={leftPaneRef}
         style={{
@@ -198,7 +209,7 @@ export default function SelectImage() {
         />
       </div>
 
-      {/* 오른쪽: 썸네일 목록 */}
+      {/* 오른쪽 썸네일 6개 (2×3) */}
       <div
         style={{
           flex: '0 0 40%',
@@ -213,11 +224,11 @@ export default function SelectImage() {
             flex: 1,
             display: 'grid',
             gridTemplateColumns: 'repeat(2, 1fr)',
-            gridTemplateRows: 'repeat(4, 1fr)',
+            gridTemplateRows: 'repeat(3, auto)', // 🔁 행 높이를 콘텐츠에 맞게
             gap: 8,
           }}
         >
-          {images.map((img, idx) => {
+          {images.slice(0, VISIBLE_COUNT).map((img, idx) => {
             const isSelected = selectedIdx.includes(idx)
             return (
               <button
@@ -230,27 +241,33 @@ export default function SelectImage() {
                   padding: 0,
                   cursor: img ? 'pointer' : 'default',
                   width: '100%',
-                  height: '100%',
+                  // height는 콘텐츠에 맡김
                 }}
               >
                 <div
                   style={{
                     width: '100%',
-                    height: '100%',
                     borderRadius: 10,
                     border: isSelected ? '3px solid #4f8cff' : '2px solid #ccc',
                     overflow: 'hidden',
                     opacity: isSelected ? 0.7 : 1,
+                    position: 'relative',
+                    aspectRatio: '1030 / 480', // ✅ 썸네일 박스를 이미지 비율로 고정
                   }}
                 >
                   {img ? (
                     <img
                       src={img}
                       alt={`이미지 ${idx + 1}`}
+                      onLoad={(e) => {
+                        const el = e.currentTarget
+                        console.log(
+                          `썸네일 ${idx} - natural: ${el.naturalWidth}x${el.naturalHeight}, display: ${el.clientWidth}x${el.clientHeight}`
+                        )
+                      }}
                       style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover',
                         display: 'block',
                       }}
                     />

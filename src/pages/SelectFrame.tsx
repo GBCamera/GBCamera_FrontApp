@@ -207,21 +207,29 @@ export default function SelectFrame() {
     setFrame(path)
   }
 
-  /** ✅ 저장 후 Electron으로 바로 출력 */
+  /** ✅ 저장 후 프린트는 가능한 경우만 수행하고, 나머지 로직은 항상 실행 */
   const handleSaveAndGoResult = async () => {
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const printerName = getSavedPrinter() // Setting.tsx에서 저장한 프린터 이름
+    const printerName = getSavedPrinter()
     console.log('[SelectFrame] saved printer =', printerName)
+
+    // 프린터/전자 API 존재 여부 체크 (있으면 인쇄, 없으면 인쇄만 생략)
+    const canPrint = !!printerName && !!window.electronAPI?.printImage
+
     if (!printerName) {
-      alert('선택된 프린터가 없습니다. 설정에서 프린터를 선택해주세요.')
-      return
+      alert('선택된 프린터가 없습니다. 인쇄는 생략되고 결과만 저장됩니다.')
+    } else if (!window.electronAPI?.printImage) {
+      alert('Electron 인쇄 기능을 찾을 수 없어 인쇄는 생략되고 결과만 저장됩니다.')
     }
 
     setSaving(true)
     canvas.toBlob(async (blob) => {
-      if (!blob) { setSaving(false); return }
+      if (!blob) {
+        setSaving(false)
+        return
+      }
       const dataURL = await blobToDataURL(blob)
       const payloadBase64 = toBase64Payload(dataURL)
 
@@ -241,22 +249,21 @@ export default function SelectFrame() {
         console.log('[SelectFrame] save status =', res.status)
         if (!res.ok) throw new Error(`Server error(save): ${res.status}`)
 
-        // 2) Electron 메인 프로세스에 직접 프린트 (대화상자 없이)
-        if (!window.electronAPI?.printImage) {
-          throw new Error('electronAPI.printImage not found')
+        // 2) 프린터가 준비된 경우에만 인쇄
+        if (canPrint) {
+          console.log('[SelectFrame] print via Electron =>', { deviceName: printerName })
+          await window.electronAPI!.printImage({
+            dataURL: dataURL, // data:image/jpeg;base64,....
+            deviceName: printerName!, // 메인에서 deviceName으로 받도록 이미 구현됨
+            copies: 1,
+          })
         }
-        console.log('[SelectFrame] print via Electron =>', { deviceName: printerName })
-        await window.electronAPI.printImage({
-          dataURL: dataURL,        // data:image/jpeg;base64,....
-          deviceName: printerName, // 메인에서 deviceName으로 받도록 이미 구현됨
-          copies: 1,
-        })
 
-        // 3) 상태 저장 후 라우팅
+        // 3) 상태 저장 후 라우팅 (프린터 유무와 상관없이 실행)
         setResultImage(dataURL)
         navigate('/qr')
       } catch (e) {
-        console.error('[SelectFrame] print error:', e)
+        console.error('[SelectFrame] print/save error:', e)
         alert('결과 저장 또는 인쇄에 실패했습니다. 서버/프린터 상태를 확인해주세요.')
       } finally {
         setSaving(false)

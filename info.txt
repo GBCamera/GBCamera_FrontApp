@@ -1,0 +1,6 @@
+주의사항!!!!
+
+해당 프로그램은 Apple의 공인 인증을 받지 못했습니다....ㅎ
+dmg 파일 설치 후 
+터미널로 가서
+sudo xattr -cr /Applications/GBCamera.app 실행해서 우회 부탁드립니다!!
