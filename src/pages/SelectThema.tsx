@@ -12,12 +12,14 @@ export default function SelectFrame() {
                 flexDirection: 'column',
                 justifyContent: 'flex-start',
                 alignItems: 'center',
-                height: '100%',
-                paddingTop: '210px',   // 🔥 제목 위치 더 아래로 이동
-                gap: '70px',           // 🔥 제목과 버튼 사이 간격 증가
+                minHeight: '60vh',     // 🔥 화면 전체 높이를 채워 스크롤 안 생기게
+                paddingTop: '210px',
+                gap: '70px',
                 textAlign: 'center',
+                overflow: 'hidden',      // 🔥 혹시 모를 스크롤 완전 차단
             }}
         >
+
 
             {/* 제목 */}
             <p 
