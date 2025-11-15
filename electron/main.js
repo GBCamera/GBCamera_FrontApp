@@ -79,6 +79,10 @@ function createWindow() {
     mainWindow = new electron_1.BrowserWindow({
         width: 1280,
         height: 800,
+        // 🔹 상단 기본 타이틀바(최소화/닫기 바) 제거
+        frame: false,
+        // (맥에서 쓸 때도 자연스럽게 보이도록 – 윈도우에서 둬도 문제 없음)
+        titleBarStyle: 'hidden',
         webPreferences: {
             preload: preloadPath,
             contextIsolation: true,
@@ -87,6 +91,8 @@ function createWindow() {
         autoHideMenuBar: true,
         show: true,
     });
+    // 🔹 앱 실행 시 바로 최대화 (전체화면 느낌)
+    mainWindow.maximize();
     if (isDev) {
         var devUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173/';
         mainWindow.loadURL(devUrl);

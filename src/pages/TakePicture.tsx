@@ -24,7 +24,7 @@ export default function TakePicture() {
 
     const TOTAL_SHOTS = 6
     const [shots, setShots] = useState<number>(TOTAL_SHOTS)
-    const [timer, setTimer] = useState<number>(10)
+    const [timer, setTimer] = useState<number>(6)
 
     const isFrameMode = frame === '2'
     const overlayFrames = [tema1, tema2, tema3]
@@ -238,7 +238,7 @@ export default function TakePicture() {
             } else {
             setShots((s) => {
                 const nextShots = Math.max(s - 1, 0)
-                if (nextShots > 0) setTimer(10)
+                if (nextShots > 0) setTimer(6)
                 return nextShots
             })
             }
