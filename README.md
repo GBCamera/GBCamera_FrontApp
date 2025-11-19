@@ -1,1 +1,2 @@
-# GBCamera 프로젝트 프론트 웹/앱
+# GBCamera_FrontApp
+GBCamera 프로젝트 프론트 웹/앱
