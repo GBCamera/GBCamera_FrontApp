@@ -1,9 +1,11 @@
+// src/pages/SelectImage.tsx
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 
 type Slot = { x: number; y: number; w: number; h: number }
 
+// 📌 왼쪽 큰 프레임(1.png)의 실제 사이즈
 const FRAME_W = 1181
 const FRAME_H = 1772
 const FRAME_ASPECT = FRAME_W / FRAME_H
@@ -15,7 +17,7 @@ const VISIBLE_COUNT = 6
 
 export default function SelectImage() {
   const navigate = useNavigate()
-  const { images, setSelectImg } = useAppStore()
+  const { images, setSelectImg, frame } = useAppStore()
 
   // 선택된 이미지 인덱스 (로컬 상태)
   const [selectedIdx, setSelectedIdx] = useState<number[]>([])
@@ -26,7 +28,14 @@ export default function SelectImage() {
   const imageCacheRef = useRef<Map<number, HTMLImageElement>>(new Map())
   const [isReady, setIsReady] = useState(false)
 
-  const framePath = frameImages['../image/1.png'] as string
+  // frame 값에 따라 파일 이름 결정
+const frameFile = frame === "1" ? '1.png'
+               : frame === "2" ? '10.png'
+               : '1.png'       // 기본값 (혹시 frame이 undefined일 경우 대비)
+
+// key를 동적으로 생성
+const framePath = frameImages[`../image/${frameFile}`] as string
+
 
   // 📌 프레임 속 슬롯 위치 설정
   const BASE_X = 0.065
@@ -59,7 +68,7 @@ export default function SelectImage() {
       img.src = src
     })
 
-  // 캔버스 사이즈 조정
+  // 캔버스 사이즈 조정 (왼쪽 큰 프레임은 1181x1772 비율 유지)
   const sizeCanvasToContainer = () => {
     const canvas = canvasRef.current
     const host = leftPaneRef.current
@@ -186,7 +195,7 @@ export default function SelectImage() {
         boxSizing: 'border-box',
       }}
     >
-      {/* 왼쪽 미리보기 */}
+      {/* 왼쪽 미리보기 (세로 긴 최종 프레임) */}
       <div
         ref={leftPaneRef}
         style={{
@@ -224,7 +233,7 @@ export default function SelectImage() {
             flex: 1,
             display: 'grid',
             gridTemplateColumns: 'repeat(2, 1fr)',
-            gridTemplateRows: 'repeat(3, auto)', // 🔁 행 높이를 콘텐츠에 맞게
+            gridTemplateRows: 'repeat(3, auto)',
             gap: 8,
           }}
         >
@@ -241,7 +250,6 @@ export default function SelectImage() {
                   padding: 0,
                   cursor: img ? 'pointer' : 'default',
                   width: '100%',
-                  // height는 콘텐츠에 맡김
                 }}
               >
                 <div
@@ -252,23 +260,19 @@ export default function SelectImage() {
                     overflow: 'hidden',
                     opacity: isSelected ? 0.7 : 1,
                     position: 'relative',
-                    aspectRatio: '1030 / 480', // ✅ 썸네일 박스를 이미지 비율로 고정
+                    // 🔥 썸네일 박스 비율을 1023x476으로 고정 (촬영 이미지/tema와 동일)
+                    aspectRatio: '1023 / 476',
                   }}
                 >
                   {img ? (
                     <img
                       src={img}
                       alt={`이미지 ${idx + 1}`}
-                      onLoad={(e) => {
-                        const el = e.currentTarget
-                        console.log(
-                          `썸네일 ${idx} - natural: ${el.naturalWidth}x${el.naturalHeight}, display: ${el.clientWidth}x${el.clientHeight}`
-                        )
-                      }}
                       style={{
                         width: '100%',
                         height: '100%',
                         display: 'block',
+                        objectFit: 'cover', // 이미지도 1023x476 이라 정확히 맞음
                       }}
                     />
                   ) : (

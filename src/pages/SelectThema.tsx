@@ -1,6 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 
+// 이미지 import
+import aloneImg from '../image/alone.png'
+import withImg from '../image/with.png'
+
 export default function SelectFrame() {
     const navigate = useNavigate()
     const setFrame = useAppStore((s)=>s.setFrame)
@@ -12,15 +16,13 @@ export default function SelectFrame() {
                 flexDirection: 'column',
                 justifyContent: 'flex-start',
                 alignItems: 'center',
-                minHeight: '60vh',     // 🔥 화면 전체 높이를 채워 스크롤 안 생기게
-                paddingTop: '210px',
-                gap: '70px',
+                minHeight: '40vh',
+                paddingTop: '90px',
+                gap: '130px',
                 textAlign: 'center',
-                overflow: 'hidden',      // 🔥 혹시 모를 스크롤 완전 차단
+                overflow: 'hidden',
             }}
         >
-
-
             {/* 제목 */}
             <p 
                 style={{
@@ -32,46 +34,79 @@ export default function SelectFrame() {
                 원하는 테마를 선택하세요
             </p>
 
-            {/* 버튼 그룹 (좌우 배치) */}
+            {/* 버튼 그룹 */}
             <div
                 style={{
                     display: 'flex',
                     flexDirection: 'row',
-                    gap: '40px',           // 버튼 간 간격도 조금 더 여유 있게
+                    gap: '150px',
                     justifyContent: 'center',
                     width: '100%',
                     maxWidth: '600px',
                 }}
             >
+                {/* 🔵 혼자 찍기 버튼 */}
                 <button
                     onClick={() => { setFrame("1"); navigate('/takePicture') }}
                     style={{
-                        padding: '18px 40px',
-                        fontSize: '24px',
-                        borderRadius: '12px',
-                        cursor: 'pointer',
-                        border: '2px solid black',
-                        background: 'transparent', 
-                    }}
-                >
-                    혼자 찍기
-                </button>
-
-                <button
-                    onClick={() => { setFrame("2"); navigate('/takePicture') }}
-                    style={{
-                        padding: '18px 40px',
+                        padding: '20px',
                         fontSize: '24px',
                         borderRadius: '12px',
                         cursor: 'pointer',
                         border: '2px solid black',
                         background: 'transparent',
+                        width: '220px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '12px',
                     }}
                 >
-                    같이 찍기
+                    <img 
+                        src={aloneImg}
+                        alt="혼자 찍기"
+                        style={{
+                            width: '160px',
+                            height: '160px',
+                            objectFit: 'contain',
+                        }}
+                    />
+                    <span style={{ fontSize: '22px', fontWeight: 600 }}>
+                        혼자 찍기
+                    </span>
+                </button>
+
+                {/* 🟣 같이 찍기 버튼 */}
+                <button
+                    onClick={() => { setFrame("2"); navigate('/takePicture') }}
+                    style={{
+                        padding: '20px',
+                        fontSize: '24px',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        border: '2px solid black',
+                        background: 'transparent',
+                        width: '220px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '12px',
+                    }}
+                >
+                    <img 
+                        src={withImg}
+                        alt="같이 찍기"
+                        style={{
+                            width: '160px',
+                            height: '160px',
+                            objectFit: 'contain',
+                        }}
+                    />
+                    <span style={{ fontSize: '22px', fontWeight: 600 }}>
+                        같이 찍기
+                    </span>
                 </button>
             </div>
-
         </div>
     )
 }

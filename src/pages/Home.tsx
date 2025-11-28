@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '../store/useAppStore'
 import { useState } from 'react'
 
+import iconImg from '../image/icon.png'
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? ''
 
 export default function Home() {
@@ -93,16 +95,24 @@ export default function Home() {
           opacity: loading ? 0.6 : 1,
         }}
       >
-        <p style={{ margin: 0, lineHeight: 1.2, color: 'black' }}>인생네컷</p>
+        <img 
+                        src={iconImg}
+                        alt="아이콘"
+                        style={{
+                            width: '400px',
+                            height: '400px',
+                            objectFit: 'contain',
+                        }}
+                    />
         <p
           style={{
-            marginTop: '40px',
-            fontSize: '20px',
+            marginTop: '5px',
+            fontSize: '50px',
             opacity: 0.8,
             color: 'black',
           }}
         >
-          {loading ? '시작 중...' : '시작하기'}
+          {loading ? '시작 중...' : '촬영 시작하기'}
         </p>
       </button>
     </div>

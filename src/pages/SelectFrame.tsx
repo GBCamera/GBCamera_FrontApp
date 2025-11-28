@@ -30,9 +30,7 @@ function loadImageSafe(src: string): Promise<HTMLImageElement | null> {
         const sameOrigin = new URL(src, location.href).origin === location.origin
         if (!sameOrigin) img.crossOrigin = 'anonymous'
       }
-    } catch {
-      // ignore invalid URL format
-    }
+    } catch {}
 
     img.onload = () => resolve(img)
     img.onerror = (e) => {
@@ -47,7 +45,7 @@ const PLACEHOLDER_BG = '#000'
 
 export default function SelectFrame() {
   const navigate = useNavigate()
-  const { selectImg, index, setFrame, setResultImage } = useAppStore()
+  const { selectImg, index, frame, setResultImage } = useAppStore()
 
   const [saving, setSaving] = useState(false)
   const [selectedFrame, setSelectedFrame] = useState<string>(
@@ -157,7 +155,7 @@ export default function SelectFrame() {
     ctx.drawImage(frameImg, 0, 0, cssW, cssH)
   }
 
-  /** 초기 렌더시 프레임 즉시 로드 및 표시 */
+  /** 초기 렌더시 프레임 즉시 로드 */
   useEffect(() => {
     const img = new Image()
     img.onload = () => {
@@ -202,26 +200,24 @@ export default function SelectFrame() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
+  /** frame 값에 따라 프레임 선택 */
   const handleSelectFrame = (path: string) => {
     setSelectedFrame(path)
-    setFrame(path)
+    //setFrame(path)
   }
 
-  /** ✅ 저장 후 프린트는 가능한 경우만 수행하고, 나머지 로직은 항상 실행 */
+  /** 저장 + 인쇄 */
   const handleSaveAndGoResult = async () => {
     const canvas = canvasRef.current
     if (!canvas) return
 
     const printerName = getSavedPrinter()
-    console.log('[SelectFrame] saved printer =', printerName)
-
-    // 프린터/전자 API 존재 여부 체크 (있으면 인쇄, 없으면 인쇄만 생략)
     const canPrint = !!printerName && !!window.electronAPI?.printImage
 
     if (!printerName) {
-      alert('선택된 프린터가 없습니다. 인쇄는 생략되고 결과만 저장됩니다.')
+      alert('선택된 프린터가 없습니다. 인쇄는 생략됩니다.')
     } else if (!window.electronAPI?.printImage) {
-      alert('Electron 인쇄 기능을 찾을 수 없어 인쇄는 생략되고 결과만 저장됩니다.')
+      alert('Electron 인쇄 기능이 없어 인쇄는 생략됩니다.')
     }
 
     setSaving(true)
@@ -234,8 +230,7 @@ export default function SelectFrame() {
       const payloadBase64 = toBase64Payload(dataURL)
 
       try {
-        // 1) 결과 저장 (기존 로직 유지)
-        console.log('[SelectFrame] PUT /index/result', { index })
+        // 저장
         const res = await fetch(`${API_BASE}/index/result`, {
           method: 'PUT',
           mode: 'cors',
@@ -246,25 +241,22 @@ export default function SelectFrame() {
           },
           body: JSON.stringify({ base64: payloadBase64 }),
         })
-        console.log('[SelectFrame] save status =', res.status)
         if (!res.ok) throw new Error(`Server error(save): ${res.status}`)
 
-        // 2) 프린터가 준비된 경우에만 인쇄
+        // 인쇄
         if (canPrint) {
-          console.log('[SelectFrame] print via Electron =>', { deviceName: printerName })
           await window.electronAPI!.printImage({
-            dataURL: dataURL, // data:image/jpeg;base64,....
-            deviceName: printerName!, // 메인에서 deviceName으로 받도록 이미 구현됨
+            dataURL,
+            deviceName: printerName,
             copies: 1,
           })
         }
 
-        // 3) 상태 저장 후 라우팅 (프린터 유무와 상관없이 실행)
         setResultImage(dataURL)
         navigate('/qr')
       } catch (e) {
-        console.error('[SelectFrame] print/save error:', e)
-        alert('결과 저장 또는 인쇄에 실패했습니다. 서버/프린터 상태를 확인해주세요.')
+        console.error('[SelectFrame] error:', e)
+        alert('저장 또는 인쇄 중 오류가 발생했습니다.')
       } finally {
         setSaving(false)
       }
@@ -331,11 +323,16 @@ export default function SelectFrame() {
           }}
         >
           {Array.from({ length: 6 }, (_, i) => {
-            const path = frameImages[`../image/${i + 1}.png`] as string
+            // 🔥 frame 값에 따라 프레임 세트 결정
+            const startIndex = frame === '2' ? 7 : 1
+            const fileIndex = startIndex + i
+
+            const path = frameImages[`../image/${fileIndex}.png`] as string
             const isActive = selectedFrame === path
+
             return (
               <button
-                key={i}
+                key={fileIndex}
                 onClick={() => handleSelectFrame(path)}
                 style={{
                   border: isActive ? '3px solid #4f8cff' : '2px solid #ccc',
@@ -350,7 +347,7 @@ export default function SelectFrame() {
               >
                 <img
                   src={path}
-                  alt={`프레임 ${i + 1}`}
+                  alt={`프레임 ${fileIndex}`}
                   style={{
                     width: '100%',
                     height: '100%',
